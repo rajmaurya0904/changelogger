@@ -24,7 +24,11 @@ TODO.
 
 ## FAQ
 
-TODO.
+How do I install changelogger?
+You can install it via pip: `pip install changelogger`
+
+How do I generate a changelog?
+Run `changelogger` in your repository to generate a changelog from conventional commits.
 
 ## License
 
