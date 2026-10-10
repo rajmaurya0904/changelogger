@@ -20,7 +20,7 @@ def parse_commit(message: str) -> dict:
     else:
         header, description = message.split(": ", 1)
 
-    # Detect breaking change indicator '!'
+    # Detect breaking change indicator '!' in header
     # It can appear directly after the type (e.g., "feat!:") or after the closing
     # parenthesis of the scope (e.g., "feat(core)!:").
     if header.endswith("!"):
@@ -39,4 +39,10 @@ def parse_commit(message: str) -> dict:
         result["scope"] = None
 
     result["description"] = description.strip()
+
+    # Detect breaking change footer
+    # If any line starts with 'BREAKING CHANGE:' set breaking True
+    if "BREAKING CHANGE:" in message:
+        result["breaking"] = True
+
     return result
