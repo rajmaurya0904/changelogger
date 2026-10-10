@@ -8,6 +8,12 @@ Claude Code skill that generates Keep a Changelog entries from conventional comm
 pip install -e ".[dev]"
 ```
 
+## Installation
+
+```bash
+pip install changelogger
+```
+
 ## Usage
 
 TODO: fill in as the build loop lands the core feature.
