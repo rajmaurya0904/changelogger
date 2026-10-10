@@ -19,6 +19,11 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["changelogger*"]
 
+[project.scripts]
+changelogger = "changelogger.cli:main"
+
+include = ["changelogger*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
