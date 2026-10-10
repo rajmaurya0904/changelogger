@@ -6,33 +6,47 @@ from changelogger.parser import parse_commit
 def test_parse_commit_with_scope():
     """Parse a commit with scope."""
     msg = "feat(core): add parser"
-    expected = {"type": "feat", "scope": "core", "description": "add parser"}
+    expected = {"type": "feat", "scope": "core", "description": "add parser", "breaking": False}
     assert parse_commit(msg) == expected
 
 
 def test_parse_commit_without_scope():
     """Parse a commit without scope."""
     msg = "fix: correct typo"
-    expected = {"type": "fix", "scope": None, "description": "correct typo"}
+    expected = {"type": "fix", "scope": None, "description": "correct typo", "breaking": False}
     assert parse_commit(msg) == expected
 
 
 def test_parse_commit_with_empty_description():
     """Parse a commit with empty description."""
     msg = "feat(core):"
-    expected = {"type": "feat", "scope": "core", "description": ""}
+    expected = {"type": "feat", "scope": "core", "description": "", "breaking": False}
     assert parse_commit(msg) == expected
 
 
 def test_parse_commit_without_colon():
     """Parse a commit without colon (should treat whole as header)."""
     msg = "feat(core)"
-    expected = {"type": "feat", "scope": "core", "description": ""}
+    expected = {"type": "feat", "scope": "core", "description": "", "breaking": False}
     assert parse_commit(msg) == expected
 
 
 def test_parse_commit_without_scope_and_colon():
     """Parse a commit without scope and without colon."""
     msg = "feat"
-    expected = {"type": "feat", "scope": None, "description": ""}
+    expected = {"type": "feat", "scope": None, "description": "", "breaking": False}
+    assert parse_commit(msg) == expected
+
+
+def test_parse_commit_breaking_after_type():
+    """Parse a commit with breaking marker after type."""
+    msg = "feat!: overhaul API"
+    expected = {"type": "feat", "scope": None, "description": "overhaul API", "breaking": True}
+    assert parse_commit(msg) == expected
+
+
+def test_parse_commit_breaking_after_scope():
+    """Parse a commit with breaking marker after scope."""
+    msg = "feat(core)!: overhaul API"
+    expected = {"type": "feat", "scope": "core", "description": "overhaul API", "breaking": True}
     assert parse_commit(msg) == expected
