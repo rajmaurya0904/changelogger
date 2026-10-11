@@ -5,5 +5,8 @@ description: Claude Code skill that generates Keep a Changelog entries from conv
 
 # Changelogger
 
-TODO: fill in the skill's instructions. See TASKS.md for the planned build
-steps -- this skeleton is filled in one task at a time by the build loop.
+Stub. This skill has no instructions yet.
+
+Only `changelogger.parser.parse_commit()` is implemented; it splits a Conventional
+Commits header into `type`, `scope`, `description` and `breaking`. Nothing reads git
+history or writes a changelog. See README.md for what does and does not work.
