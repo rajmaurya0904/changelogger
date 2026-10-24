@@ -1,113 +1,143 @@
 # changelogger
 
-**Breaks a Conventional Commits header into type, scope, description and a breaking-change flag — the first step toward generating Keep a Changelog entries from git history.**
+**Turns a git repository's Conventional Commits and version tags into a Keep a Changelog file, for maintainers who would rather not write release notes by hand.**
 
-**Status: early and incomplete.** `parse_commit()` works and is tested against seven
-cases. The `changelogger` command installs and `--help` prints, but **it does nothing
-else**: it reads no git history, writes no CHANGELOG.md, and takes no arguments. The
-skill file in `SKILL.md` is still a stub.
-
-## The problem
-
-Writing release notes by hand means scrolling `git log`, deciding which of forty
-commits a user would care about, and re-learning where "Added" goes versus "Changed".
-The commit headers already encode all of it — `feat`, `fix`, the `!` that means you
-broke someone's build. Something just has to read them.
-
-## Real output
-
-Four commit subjects in, four classifications out:
+Release day means scrolling `git log`, deciding which of forty commits a user cares
+about, and remembering whether a rename goes under "Changed" or "Removed". The commit
+headers already say it: `feat`, `fix`, the `!` that means you broke someone's build.
+changelogger reads them, groups them by release tag, and prints the file.
 
 ```console
-$ cat commits.txt
-feat(parser): accept scoped commit headers
-fix: stop crashing on an empty description
-feat(cli)!: rename --out to --output
-chore: bump ruff
+$ changelogger --no-hashes -v
+changelogger: skipped 1 non-conventional commit
+  29c6d9d Fix typo in readme
+# Changelog
 
-$ python classify.py
-{'type': 'feat', 'scope': 'parser', 'description': 'accept scoped commit headers', 'breaking': False}
-{'type': 'fix', 'scope': None, 'description': 'stop crashing on an empty description', 'breaking': False}
-{'type': 'feat', 'scope': 'cli', 'description': 'rename --out to --output', 'breaking': True}
-{'type': 'chore', 'scope': None, 'description': 'bump ruff', 'breaking': False}
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- **BREAKING** **cli:** rename --out to --output
+  BREAKING CHANGE: scripts passing --out must switch to --output
+- **api:** add pagination
+
+### Fixed
+
+- **api:** return 404 for unknown ids ([#9](https://github.com/acme/widget/pull/9))
+
+## [0.1.0] - 2026-01-07
+
+### Added
+
+- read config from pyproject.toml
+
+### Fixed
+
+- **parser:** handle empty input ([#3](https://github.com/acme/widget/pull/3))
+
+[Unreleased]: https://github.com/acme/widget/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/acme/widget/releases/tag/v0.1.0
 ```
 
-`classify.py`:
-
-```python
-from changelogger.parser import parse_commit
-
-for line in open("commits.txt"):
-    line = line.strip()
-    if line:
-        print(parse_commit(line))
-```
-
-And the command, which is as far as the CLI currently goes:
+Naming the unreleased commits as the next version, with a custom heading for fixes:
 
 ```console
-$ changelogger --help
-usage: changelogger [-h]
+$ changelogger --unreleased --no-header --release 0.2.0 --date 2026-02-10 --no-hashes --no-links --type-map '{"fix": "Bug Fixes"}'
+## [0.2.0] - 2026-02-10
 
-Generate Keep a Changelog entries from conventional commit history.
+### Added
 
-options:
-  -h, --help  show this help message and exit
+- **BREAKING** **cli:** rename --out to --output
+  BREAKING CHANGE: scripts passing --out must switch to --output
+- **api:** add pagination
+
+### Bug Fixes
+
+- **api:** return 404 for unknown ids (#9)
+
+```
+
+Outside a repository it says so and exits 1:
+
+```console
+$ changelogger /tmp
+changelogger: Not a git repository
 ```
 
 ## Install
 
-Not on PyPI. Clone it and install from the working tree:
+Not on PyPI yet. Clone the repository, then:
 
 ```bash
-pip install -e ".[dev]"
+pip install -e .
 ```
+
+Needs Python 3.11+ and `git` on PATH. No other dependencies.
 
 ## Usage
 
 ```bash
-changelogger --help          # prints usage; running it bare exits 0 and prints nothing
-python -m changelogger        # same entry point via the module
+changelogger -o CHANGELOG.md                  # the whole history, written to a file
+changelogger --since v1.3.0                   # releases after a tag, plus unreleased work
+changelogger --unreleased --no-header --release 1.4.0   # just the notes for the next release
+changelogger --type-map '{"docs": "Documentation"}'     # rename or reveal sections (null hides)
 ```
 
-```python
-from changelogger.parser import parse_commit
+Other flags: `--until REF`, `--date YYYY-MM-DD` (with `--release`), `--no-hashes`,
+`--no-links`, `--strict` (exit 2 if any commit is not conventional), `-v` (list the
+skipped commits), and an optional first argument for the repository path. Without
+`-o` the result goes to stdout. `--type-map` also accepts the path of a JSON file.
 
-parse_commit("fix(api)!: drop v1 endpoints")
-# {'type': 'fix', 'scope': 'api', 'description': 'drop v1 endpoints', 'breaking': True}
-```
+Exit codes: 0 success, 1 error (not a repository, unknown tag, bad option), 2 with
+`--strict` when non-conventional commits were found. A repository with no usable
+commits prints `No conventional commits found` and exits 0.
+
+`SKILL.md` describes the same workflow for Claude Code, so the command can be used as
+a skill when the repository is checked out.
 
 ## How it works
 
-- Splits the message once on the first `": "`. No `": "` means the whole string is
-  treated as the header and the description comes back `""`.
-- A trailing `!` on the header sets `breaking` and is stripped, so both `feat!:` and
-  `feat(core)!:` are caught.
-- A scope is whatever sits between the first `(` and the next `)`. No parentheses
-  means `scope` is `None`.
-- The literal text `BREAKING CHANGE:` anywhere in the message also sets `breaking`.
-- The return value is always a four-key dict — `type`, `scope`, `description`,
-  `breaking` — never a raised exception for a malformed header.
+- Version tags (`v1.2.3` or `1.2.3`, pre-releases included) sorted by semver become
+  release blocks. Each holds the commits between that tag and the previous one;
+  commits after the newest tag become `[Unreleased]`.
+- Each commit header is matched against `type(scope)!: description`. `git revert`'s
+  `Revert "..."` messages count as `revert`. A `BREAKING CHANGE:` footer or a `!` marks
+  the commit breaking, and its note is printed under the bullet.
+- Types map to the six Keep a Changelog headings: `feat` to Added, `fix` to Fixed,
+  `perf`/`refactor`/`revert` to Changed, and so on. `docs`, `style`, `test`, `build`,
+  `ci` and `chore` are hidden, except when breaking.
+- `(#123)` in a description and the commit hash become links when `origin` is an
+  ssh, git or https remote on a hosted service; compare links go in the footer.
+- `--since`/`--until` accept a version tag. Anything else (a branch, a sha) is treated
+  as a plain revision range and printed as one block.
+- Commits are read with `git log --no-merges`, so merge commits are not listed.
 
 ## Limitations
 
-- No changelog is generated. There is no git reader, no grouping into
-  Added/Changed/Fixed sections, and no file writer.
-- The CLI accepts no arguments and produces no output.
-- Commit types are not validated. `banana: hello` parses as type `banana`.
-- The separator must be `": "` with a space. `fix:typo` yields type `fix:typo` and an
-  empty description.
-- `BREAKING CHANGE:` is matched anywhere in the string, including inside a quoted
-  description — a commit that merely mentions the phrase is flagged as breaking.
-- Only the header is parsed; the commit body and footers are otherwise ignored.
-- `SKILL.md` is a placeholder and gives Claude Code no usable instructions.
+- It writes a complete file. It does not merge into a CHANGELOG.md you edited by hand;
+  use `--unreleased --no-header` and paste, or write to a new file and diff.
+- Bullets are the commit descriptions as written. Vague commits give vague notes.
+- Commits that are not Conventional Commits are skipped with a count on stderr, not
+  guessed at. Only the header and `BREAKING CHANGE:` footers are read.
+- Tags on other branches, and tags that are not semver, are ignored or may split the
+  history unexpectedly; tags are assumed to lie on one line of history.
+- Links assume GitHub-style `/pull/N`, `/commit/SHA` and `/compare/A...B` paths.
+- No PyPI release, no `mypy`/strict typing guarantees.
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest -q        # 9 tests
+pytest -q
 ruff check .
 ```
 
-MIT — see [LICENSE](LICENSE).
+The tests build real throwaway git repositories, so they need `git` and take about a
+minute on Windows.
+
+MIT, see [LICENSE](LICENSE).
