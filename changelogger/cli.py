@@ -27,8 +27,8 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=EPILOG,
     )
     p.add_argument("path", nargs="?", default=".", help="repository directory (default: .)")
-    p.add_argument("--since", metavar="REF", help="only releases after this tag (or commits after REF)")
-    p.add_argument("--until", metavar="REF", help="only releases up to this tag (or commits up to REF)")
+    p.add_argument("--since", metavar="REF", help="releases after this tag, or commits after REF")
+    p.add_argument("--until", metavar="REF", help="releases up to this tag, or commits up to REF")
     p.add_argument(
         "--type-map",
         metavar="JSON|FILE",
@@ -58,7 +58,8 @@ def run(args: argparse.Namespace) -> int:
         try:
             _date.fromisoformat(args.date)
         except ValueError:
-            raise ChangeloggerError(f"--date must look like 2026-01-31, got {args.date!r}") from None
+            msg = f"--date must look like 2026-01-31, got {args.date!r}"
+            raise ChangeloggerError(msg) from None
 
     repo = ensure_repository(Path(args.path))
     collected = collect(repo, args.since, args.until)
@@ -86,6 +87,10 @@ def run(args: argparse.Namespace) -> int:
 
     url = None if args.no_links else remote_url(repo)
     text = build_changelog(releases, type_map, url, hashes=not args.no_hashes)
+    if "
+## [" not in text:
+        print("No user-facing changes: every commit in range has a hidden type")
+        return strict_code
     if args.output:
         out = Path(args.output)
         try:
