@@ -241,3 +241,31 @@ def test_no_header_gives_bare_release_notes(released_repo, capsys) -> None:
     out = capsys.readouterr().out
     assert out.startswith("## [Unreleased]")
     assert "Keep a Changelog" not in out
+
+
+def test_strict_passes_when_everything_is_conventional(repo, capsys) -> None:
+    repo.commit("feat: one")
+    repo.commit("fix: two")
+    assert main([str(repo.path), "--strict"]) == 0
+
+
+def test_unicode_descriptions_survive(repo, tmp_path: Path) -> None:
+    repo.commit("feat: support café menus ☕")
+    target = tmp_path / "out.md"
+    assert main([str(repo.path), "-o", str(target), "--no-hashes"]) == 0
+    assert "café menus ☕" in target.read_text(encoding="utf-8")
+
+
+def test_output_file_uses_lf_line_endings(repo, tmp_path: Path) -> None:
+    repo.commit("feat: one")
+    target = tmp_path / "out.md"
+    assert main([str(repo.path), "-o", str(target)]) == 0
+    assert b"\r\n" not in target.read_bytes()
+
+
+def test_git_revert_message_is_listed_under_changed(repo, capsys) -> None:
+    repo.commit('Revert "feat: risky change"')
+    assert main([str(repo.path), "--no-hashes"]) == 0
+    out = capsys.readouterr().out
+    assert "### Changed" in out
+    assert "- feat: risky change" in out
