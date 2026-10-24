@@ -175,6 +175,7 @@ def build_changelog(
     type_map: Mapping[str, str | None] | None = None,
     repo_url: str | None = None,
     hashes: bool = True,
+    header: bool = True,
 ) -> str:
     """A whole CHANGELOG.md: header, every release newest first, compare links."""
     merged = resolve_type_map(dict(type_map) if type_map else None)
@@ -186,7 +187,7 @@ def build_changelog(
             continue  # nothing unreleased worth a heading
         blocks.append(render_release(r, buckets, repo_url, hashes))
         shown.append(r)
-    text = HEADER + "\n" + "\n".join(blocks)
+    text = (HEADER + "\n" if header else "") + "\n".join(blocks)
     if repo_url:
         links = compare_links(shown, repo_url)
         if links:

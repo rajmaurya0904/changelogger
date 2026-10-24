@@ -234,3 +234,10 @@ def test_no_links_flag(released_repo, capsys) -> None:
     released_repo.git("remote", "add", "origin", "https://github.com/acme/widget.git")
     assert main([str(released_repo.path), "--no-links"]) == 0
     assert "github.com" not in capsys.readouterr().out
+
+
+def test_no_header_gives_bare_release_notes(released_repo, capsys) -> None:
+    assert main([str(released_repo.path), "--unreleased", "--no-header", "--no-hashes"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("## [Unreleased]")
+    assert "Keep a Changelog" not in out

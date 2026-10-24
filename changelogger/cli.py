@@ -39,6 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--unreleased", action="store_true", help="print only the newest block")
     p.add_argument("-o", "--output", metavar="FILE", help="write to FILE instead of stdout")
     p.add_argument("--no-hashes", action="store_true", help="omit commit hashes")
+    p.add_argument("--no-header", action="store_true", help="omit the title and format preamble")
     p.add_argument("--no-links", action="store_true", help="omit commit, PR and compare links")
     p.add_argument("--strict", action="store_true", help="exit 2 if any commit is not conventional")
     p.add_argument("-v", "--verbose", action="store_true", help="list skipped commits on stderr")
@@ -86,8 +87,10 @@ def run(args: argparse.Namespace) -> int:
         return strict_code
 
     url = None if args.no_links else remote_url(repo)
-    text = build_changelog(releases, type_map, url, hashes=not args.no_hashes)
-    if "\n## [" not in text:
+    text = build_changelog(
+        releases, type_map, url, hashes=not args.no_hashes, header=not args.no_header
+    )
+    if "## [" not in text:
         print("No user-facing changes: every commit in range has a hidden type")
         return strict_code
     if args.output:
