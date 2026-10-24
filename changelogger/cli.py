@@ -87,8 +87,7 @@ def run(args: argparse.Namespace) -> int:
 
     url = None if args.no_links else remote_url(repo)
     text = build_changelog(releases, type_map, url, hashes=not args.no_hashes)
-    if "
-## [" not in text:
+    if "\n## [" not in text:
         print("No user-facing changes: every commit in range has a hidden type")
         return strict_code
     if args.output:

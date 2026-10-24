@@ -168,8 +168,7 @@ def test_since_after_until_is_rejected(released_repo, capsys) -> None:
 def test_since_arbitrary_revision_makes_single_block(released_repo, capsys) -> None:
     assert main([str(released_repo.path), "--since", "HEAD~2", "--no-hashes"]) == 0
     out = capsys.readouterr().out
-    assert out.count("
-## [") == 1
+    assert out.count("\n## [") == 1
     assert "faster scan" in out
     assert "tidy" not in out  # docs is hidden
     assert "rename --out" not in out  # older than HEAD~2
